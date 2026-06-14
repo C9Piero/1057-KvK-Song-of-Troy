@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔️ ROK Alliance War Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --gold:       #D4A017;
+    --gold-light: #F0C040;
+    --gold-dim:   #7A5C0A;
+    --red:        #C0392B;
+    --red-bright: #E74C3C;
+    --crimson:    #8B0000;
+    --bg-void:    #0A0A0C;
+    --bg-deep:    #111116;
+    --bg-card:    #18181F;
+    --bg-hover:   #22222C;
+    --border:     #2A2A36;
+    --border-gold:#3A2E10;
+    --text-main:  #E8E4D8;
+    --text-dim:   #7A7870;
+    --text-accent:#C8B88A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    background: linear-gradient(180deg, #0D0B07 0%, var(--bg-void) 100%);
+    border-bottom: 1px solid var(--border-gold);
+    padding: 28px 40px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content:'';
+    position:absolute;inset:0;
+    background: radial-gradient(ellipse 60% 80% at 50% -20%, rgba(212,160,23,0.08) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .header-inner { max-width: 1400px; margin: 0 auto; }
+  .header-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .alliance-badge {
+    display:flex; align-items:center; gap:14px;
+  }
+  .crest {
+    width:52px; height:52px;
+    background: radial-gradient(circle, var(--gold) 0%, var(--crimson) 60%, #000 100%);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; flex-shrink:0;
+    box-shadow: 0 0 20px rgba(212,160,23,0.4);
+  }
+  .header-title {
+    font-family: 'Cinzel', serif;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--gold-light);
+    text-shadow: 0 0 30px rgba(212,160,23,0.5);
+    line-height:1.2;
+  }
+  .header-sub {
+    font-size: 11px;
+    letter-spacing:2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-top:3px;
+  }
+  .period-badge {
+    background: var(--bg-card);
+    border: 1px solid var(--border-gold);
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing:1px;
+  }
+
+  /* ─── NAV TABS ─── */
+  .nav-tabs {
+    display:flex; gap:0;
+    border-bottom: 1px solid var(--border);
+    max-width:1400px; margin: 0 auto;
+    padding: 0 40px;
+    margin-top:18px;
+  }
+  .tab-btn {
+    background:none; border:none;
+    padding: 10px 22px;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color: var(--text-dim);
+    cursor:pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space:nowrap;
+  }
+  .tab-btn:hover { color: var(--text-accent); }
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  /* ─── MAIN ─── */
+  .main { max-width:1400px; margin:0 auto; padding: 32px 40px 60px; }
+
+  .section { display:none; }
+  .section.active { display:block; }
+
+  /* ─── KPI CARDS ─── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px 24px;
+    position:relative;
+    overflow:hidden;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .kpi-card:hover { border-color: var(--gold-dim); transform:translateY(-2px); }
+  .kpi-card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, var(--crimson), var(--gold), var(--crimson));
+  }
+  .kpi-label {
+    font-size:10px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--text-dim); margin-bottom:10px;
+  }
+  .kpi-value {
+    font-family:'Cinzel',serif;
+    font-size:26px; font-weight:700;
+    color:var(--gold-light);
+    line-height:1;
+    margin-bottom:6px;
+  }
+  .kpi-sub {
+    font-size:11px; color:var(--text-dim);
+  }
+  .kpi-icon {
+    position:absolute; right:18px; top:18px;
+    font-size:28px; opacity:0.12;
+  }
+  .kpi-highlight { color: var(--text-accent); font-weight:600; }
+
+  /* ─── SECTION HEADING ─── */
+  .section-head {
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:20px; margin-top:8px;
+  }
+  .section-head h2 {
+    font-family:'Cinzel',serif;
+    font-size:14px; font-weight:700;
+    letter-spacing:2px; text-transform:uppercase;
+    color:var(--text-accent);
+  }
+  .section-head::after {
+    content:''; flex:1; height:1px;
+    background: linear-gradient(90deg, var(--border-gold), transparent);
+  }
+
+  /* ─── CHARTS ─── */
+  .charts-grid {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:16px;
+    margin-bottom:16px;
+  }
+  .charts-grid.single { grid-template-columns:1fr; }
+  .charts-grid.thirds { grid-template-columns:1fr 1fr 1fr; }
+
+  .chart-card {
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:20px 22px 16px;
+  }
+  .chart-title {
+    font-size:10px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--text-dim); margin-bottom:16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .chart-title span { color:var(--gold); }
+  .chart-wrap { position:relative; height:280px; }
+  .chart-wrap.tall { height:340px; }
+  .chart-wrap.scatter { height:360px; }
+
+  /* ─── LEADERBOARD TABLE ─── */
+  .table-controls {
+    display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;
+  }
+  .search-box {
+    flex:1; min-width:220px;
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:4px; padding:9px 14px;
+    color:var(--text-main); font-size:13px; font-family:'Inter',sans-serif;
+    outline:none; transition:border-color 0.2s;
+  }
+  .search-box:focus { border-color:var(--gold-dim); }
+  .search-box::placeholder { color:var(--text-dim); }
+
+  .filter-select {
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:4px; padding:9px 14px;
+    color:var(--text-accent); font-size:12px; font-family:'Inter',sans-serif;
+    cursor:pointer; outline:none;
+  }
+
+  .table-wrap { overflow-x:auto; }
+  table {
+    width:100%; border-collapse:collapse;
+    font-size:12px;
+  }
+  thead th {
+    background:var(--bg-deep);
+    color:var(--text-dim);
+    font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+    padding:11px 14px; text-align:left;
+    border-bottom:1px solid var(--border);
+    cursor:pointer; user-select:none;
+    white-space:nowrap;
+    transition:color 0.15s;
+  }
+  thead th:hover { color:var(--gold); }
+  thead th.sorted { color:var(--gold); }
+  thead th .sort-icon { margin-left:4px; opacity:0.6; }
+
+  tbody tr {
+    border-bottom:1px solid rgba(42,42,54,0.6);
+    transition:background 0.1s;
+  }
+  tbody tr:hover { background:var(--bg-hover); }
+  tbody td {
+    padding:10px 14px;
+    color:var(--text-main);
+    white-space:nowrap;
+  }
+  .rank-cell { font-family:'JetBrains Mono',monospace; color:var(--text-dim); font-size:11px; width:36px; }
+  .rank-cell.top3 { color:var(--gold); font-weight:700; }
+  .username-cell { font-weight:500; color:var(--text-accent); max-width:180px; overflow:hidden; text-overflow:ellipsis; }
+  .num-cell { font-family:'JetBrains Mono',monospace; font-size:11px; text-align:right; }
+  .dkp-cell { font-family:'Cinzel',serif; font-size:12px; font-weight:600; color:var(--gold-light); text-align:right; }
+
+  .dkp-bar-wrap { display:flex; align-items:center; gap:8px; }
+  .dkp-bar {
+    height:4px; border-radius:2px; flex-shrink:0;
+    background: linear-gradient(90deg, var(--crimson), var(--gold));
+  }
+
+  /* tier badges */
+  .tier {
+    display:inline-block; padding:2px 8px; border-radius:3px;
+    font-size:9px; letter-spacing:1px; text-transform:uppercase; font-weight:700;
+  }
+  .tier-s { background:rgba(212,160,23,0.2); color:var(--gold); border:1px solid var(--gold-dim); }
+  .tier-a { background:rgba(192,57,43,0.2); color:var(--red-bright); border:1px solid rgba(192,57,43,0.4); }
+  .tier-b { background:rgba(100,100,120,0.2); color:#8888AA; border:1px solid #333345; }
+  .tier-c { background:rgba(50,50,60,0.15); color:#555566; border:1px solid #222230; }
+
+  /* ─── SCATTER LEGEND ─── */
+  .scatter-legend {
+    display:flex; gap:20px; flex-wrap:wrap; margin-top:10px;
+    font-size:11px; color:var(--text-dim);
+  }
+  .leg-item { display:flex; align-items:center; gap:6px; }
+  .leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  /* ─── RESPONSIVE ─── */
+  @media(max-width:900px) {
+    .header, .main { padding-left:20px; padding-right:20px; }
+    .nav-tabs { padding:0 20px; overflow-x:auto; }
+    .charts-grid { grid-template-columns:1fr; }
+    .charts-grid.thirds { grid-template-columns:1fr; }
+    .kpi-grid { grid-template-columns:1fr 1fr; }
+  }
+  @media(max-width:560px) {
+    .kpi-grid { grid-template-columns:1fr; }
+    .header-title { font-size:18px; }
+  }
+
+  /* pulse gold on top KPI */
+  @keyframes goldGlow {
+    0%,100% { box-shadow:0 0 0 0 rgba(212,160,23,0); }
+    50% { box-shadow:0 0 18px 2px rgba(212,160,23,0.18); }
+  }
+  .kpi-card.featured { animation: goldGlow 3s ease infinite; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="alliance-badge">
+        <div class="crest">⚔️</div>
+        <div>
+          <div class="header-title">WAR COMMAND</div>
+          <div class="header-sub">Alliance Intelligence Dashboard · Rise of Kingdoms</div>
+        </div>
+      </div>
+      <div class="period-badge">📅 2026.05.08 → 2026.06.11 &nbsp;|&nbsp; 82 Members</div>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+      <button class="tab-btn" onclick="showTab('combat')">⚔ Combat</button>
+      <button class="tab-btn" onclick="showTab('logistics')">📦 Logistics</button>
+      <button class="tab-btn" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ══════════════ OVERVIEW ══════════════ -->
+  <div class="section active" id="tab-overview">
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <div class="section-head"><h2>⚔ Top 10 Kill Points</h2></div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-wrap tall"><canvas id="chartKP"></canvas></div>
+    </div>
+
+    <div class="section-head"><h2>📊 Efficiency Map (Power vs Kill Points)</h2></div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title"><span>●</span> Scatter: identify efficient warriors vs dead weight</div>
+      <div class="chart-wrap scatter"><canvas id="chartScatter"></canvas></div>
+      <div class="scatter-legend" id="scatter-legend"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ COMBAT ══════════════ -->
+  <div class="section" id="tab-combat">
+    <div class="section-head"><h2>☠ T5 vs T4 Kills — Top Fighters</h2></div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-wrap tall"><canvas id="chartT5T4"></canvas></div>
+    </div>
+
+    <div class="charts-grid" style="margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-title"><span>💀</span> Top 10 by T5 Deaths (Sacrifice)</div>
+        <div class="chart-wrap"><canvas id="chartT5Deaths"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><span>⚡</span> Power Loss — Committed to Battle</div>
+        <div class="chart-wrap"><canvas id="chartPowerLoss"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>🔥 Kill Distribution by Troop Tier</h2></div>
+    <div class="charts-grid" style="margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-title"><span>🎯</span> Enemy troop mix eliminated (Top 15)</div>
+        <div class="chart-wrap tall"><canvas id="chartKillStack"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><span>📈</span> Full Kill Points ranking (82 players)</div>
+        <div class="chart-wrap tall"><canvas id="chartKPAll"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ LOGISTICS ══════════════ -->
+  <div class="section" id="tab-logistics">
+    <div class="section-head"><h2>🤝 Top 10 Alliance Helps</h2></div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-wrap"><canvas id="chartHelps"></canvas></div>
+    </div>
+
+    <div class="section-head"><h2>⛏ Top 10 Resources Gathered</h2></div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-wrap"><canvas id="chartResources"></canvas></div>
+    </div>
+
+    <div class="section-head"><h2>📊 Current Power vs Highest Power</h2></div>
+    <div class="chart-card">
+      <div class="chart-title"><span>💡</span> Delta between peak and current power (reveals battle losses)</div>
+      <div class="chart-wrap tall"><canvas id="chartPowerDelta"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ LEADERBOARD ══════════════ -->
+  <div class="section" id="tab-leaderboard">
+    <div class="section-head"><h2>🏆 Internal Rankings — DKP System</h2></div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-gold);border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:12px;color:var(--text-dim);line-height:1.7;">
+      <strong style="color:var(--gold);font-family:'Cinzel',serif;letter-spacing:1px;">DKP FORMULA</strong> &nbsp;=&nbsp;
+      <span style="color:var(--text-accent);font-family:'JetBrains Mono',monospace;">(T5 Deaths × 16) + (T4 Deaths × 8) + (T5 Kills × 8) + (T4 Kills × 4)</span><br>
+      <span style="font-size:11px;">T5 Deaths × 16 (maximum sacrifice) · T4 Deaths × 8 · T5 Kills × 8 (elite) · T4 Kills × 4. Rewards combat risk over passive farming.</span>
+    </div>
+    <div class="table-controls">
+      <input class="search-box" type="text" placeholder="🔍  Search player..." id="searchInput" oninput="filterTable()">
+      <select class="filter-select" id="tierFilter" onchange="filterTable()">
+        <option value="">All Tiers</option>
+        <option value="S">Tier S</option>
+        <option value="A">Tier A</option>
+        <option value="B">Tier B</option>
+        <option value="C">Tier C</option>
+      </select>
+      <select class="filter-select" id="colSort" onchange="applySort()">
+        <option value="DKP">Sort: DKP</option>
+        <option value="Total Kill Points">Kill Points</option>
+        <option value="Power">Power</option>
+        <option value="T5 Deaths">T5 Deaths</option>
+        <option value="T5 Kills">T5 Kills</option>
+        <option value="Resources Gathered">Resources</option>
+        <option value="Alliance Helps">Helps</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table id="leaderTable">
+        <thead>
+          <tr>
+            <th onclick="sortBy('_rank')">#</th>
+            <th onclick="sortBy('Username')">Player <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('DKP')">DKP <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('Total Kill Points')">Kill Points <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('Power')">Power <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('T5 Deaths')">T5 Deaths <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('T4 Deaths')">T4 Deaths <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('T5 Kills')">T5 Kills <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('T4 Kills')">T4 Kills <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('Resources Gathered')">Resources <span class="sort-icon">⇅</span></th>
+            <th onclick="sortBy('Alliance Helps')">Helps <span class="sort-icon">⇅</span></th>
+            <th>Tier</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-dim)" id="tableCount"></div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+const RAW = [{"Username": "Naseem  \u30ca\u30b7\u30fc\u30e0", "Power": 145271138, "Highest Power": 166893451, "T5 Deaths": 2274061, "T4 Deaths": 0, "Power Loss": 22740610, "Total Kill Points": 690040748, "T5 Kills": 25595109, "T4 Kills": 17438899, "T3 Kills": 486731, "T2 Kills": 700691, "T1 Kills": 2006362, "Resources Gathered": 687744136, "Alliance Helps": 1813, "DKP": 310901444}, {"Username": "TAREK\u0627\u0628\u0646 \u0641\u0644\u0633\u0637\u064a\u0646", "Power": 134267170, "Highest Power": 134989120, "T5 Deaths": 303074, "T4 Deaths": 0, "Power Loss": 3030740, "Total Kill Points": 78570641, "T5 Kills": 3587008, "T4 Kills": 683047, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 56, "Resources Gathered": 674932445, "Alliance Helps": 816, "DKP": 36277436}, {"Username": "Black  Ghost", "Power": 133234246, "Highest Power": 144036636, "T5 Deaths": 416716, "T4 Deaths": 0, "Power Loss": 4167160, "Total Kill Points": 80022944, "T5 Kills": 3403895, "T4 Kills": 1193943, "T3 Kills": 1389, "T2 Kills": 29, "T1 Kills": 0, "Resources Gathered": 429600869, "Alliance Helps": 292, "DKP": 38674388}, {"Username": "CIeopatra", "Power": 123828809, "Highest Power": 127615463, "T5 Deaths": 368687, "T4 Deaths": 0, "Power Loss": 3686870, "Total Kill Points": 195083950, "T5 Kills": 7835532, "T4 Kills": 3821866, "T3 Kills": 15117, "T2 Kills": 1522, "T1 Kills": 455692, "Resources Gathered": 316164300, "Alliance Helps": 1801, "DKP": 83870712}, {"Username": "Jelowmic", "Power": 107226535, "Highest Power": 116998225, "T5 Deaths": 1207128, "T4 Deaths": 0, "Power Loss": 12071280, "Total Kill Points": 101802583, "T5 Kills": 4516602, "T4 Kills": 1141972, "T3 Kills": 1552, "T2 Kills": 20850, "T1 Kills": 14579, "Resources Gathered": 442889444, "Alliance Helps": 1553, "DKP": 60014752}, {"Username": "Wowern", "Power": 101988651, "Highest Power": 118629262, "T5 Deaths": 1469355, "T4 Deaths": 0, "Power Loss": 14693550, "Total Kill Points": 1343165668, "T5 Kills": 60787900, "T4 Kills": 12725905, "T3 Kills": 19497, "T2 Kills": 28096, "T1 Kills": 72190, "Resources Gathered": 913267554, "Alliance Helps": 3760, "DKP": 560716500}, {"Username": "Shade 1986", "Power": 101245548, "Highest Power": 101245548, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 70472536, "Alliance Helps": 352, "DKP": 0}, {"Username": "KaMO", "Power": 100965117, "Highest Power": 117543675, "T5 Deaths": 1892072, "T4 Deaths": 973, "Power Loss": 18924612, "Total Kill Points": 707175910, "T5 Kills": 29633063, "T4 Kills": 11243101, "T3 Kills": 287343, "T2 Kills": 387617, "T1 Kills": 795171, "Resources Gathered": 447681202, "Alliance Helps": 2907, "DKP": 312317844}, {"Username": "Anuuuubis", "Power": 99984834, "Highest Power": 107544186, "T5 Deaths": 482328, "T4 Deaths": 6518, "Power Loss": 4849352, "Total Kill Points": 138485908, "T5 Kills": 5458571, "T4 Kills": 2858047, "T3 Kills": 129074, "T2 Kills": 85454, "T1 Kills": 234070, "Resources Gathered": 149737030, "Alliance Helps": 221, "DKP": 62870148}, {"Username": "umit24", "Power": 99791340, "Highest Power": 110734490, "T5 Deaths": 986288, "T4 Deaths": 0, "Power Loss": 9862880, "Total Kill Points": 152527152, "T5 Kills": 6768168, "T4 Kills": 1716025, "T3 Kills": 417, "T2 Kills": 0, "T1 Kills": 9368, "Resources Gathered": 596711533, "Alliance Helps": 952, "DKP": 76790052}, {"Username": "Basem", "Power": 98776449, "Highest Power": 101435800, "T5 Deaths": 228491, "T4 Deaths": 0, "Power Loss": 2284910, "Total Kill Points": 454706660, "T5 Kills": 19088948, "T4 Kills": 7249060, "T3 Kills": 59451, "T2 Kills": 11032, "T1 Kills": 886158, "Resources Gathered": 510386346, "Alliance Helps": 1578, "DKP": 185363680}, {"Username": "MAYA GR", "Power": 94184902, "Highest Power": 100962612, "T5 Deaths": 199129, "T4 Deaths": 1351035, "Power Loss": 7395430, "Total Kill Points": 113389847, "T5 Kills": 4545229, "T4 Kills": 2220069, "T3 Kills": 19628, "T2 Kills": 69937, "T1 Kills": 330955, "Resources Gathered": 454926407, "Alliance Helps": 3083, "DKP": 59236452}, {"Username": "WLM01", "Power": 89520936, "Highest Power": 89986976, "T5 Deaths": 40837, "T4 Deaths": 0, "Power Loss": 408370, "Total Kill Points": 28743073, "T5 Kills": 1339531, "T4 Kills": 193882, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 68164, "Resources Gathered": 359260462, "Alliance Helps": 2576, "DKP": 12145168}, {"Username": "\u30ec\u30c3\u30c9 Red", "Power": 89058796, "Highest Power": 97887701, "T5 Deaths": 794412, "T4 Deaths": 111617, "Power Loss": 8390588, "Total Kill Points": 1171945423, "T5 Kills": 51856776, "T4 Kills": 13448097, "T3 Kills": 32619, "T2 Kills": 96964, "T1 Kills": 22646, "Resources Gathered": 850392101, "Alliance Helps": 1120, "DKP": 482250124}, {"Username": "jinrosoju", "Power": 88089323, "Highest Power": 101510855, "T5 Deaths": 824363, "T4 Deaths": 22113, "Power Loss": 8332082, "Total Kill Points": 68045218, "T5 Kills": 3265089, "T4 Kills": 274224, "T3 Kills": 0, "T2 Kills": 81, "T1 Kills": 5179, "Resources Gathered": 351010829, "Alliance Helps": 459, "DKP": 40584320}, {"Username": "kill me softly\u30c3", "Power": 87492582, "Highest Power": 90759340, "T5 Deaths": 293662, "T4 Deaths": 3835, "Power Loss": 2951960, "Total Kill Points": 15901042, "T5 Kills": 742025, "T4 Kills": 105717, "T3 Kills": 243, "T2 Kills": 424, "T1 Kills": 7756, "Resources Gathered": 435194504, "Alliance Helps": 811, "DKP": 11088340}, {"Username": "IvanilTerribile", "Power": 87418150, "Highest Power": 104763147, "T5 Deaths": 734967, "T4 Deaths": 0, "Power Loss": 7349670, "Total Kill Points": 20342539, "T5 Kills": 819754, "T4 Kills": 394588, "T3 Kills": 369, "T2 Kills": 48, "T1 Kills": 34, "Resources Gathered": 202940425, "Alliance Helps": 395, "DKP": 19895856}, {"Username": "AnastasiaZarina", "Power": 84767152, "Highest Power": 105201323, "T5 Deaths": 574370, "T4 Deaths": 0, "Power Loss": 5743700, "Total Kill Points": 9187294, "T5 Kills": 385159, "T4 Kills": 148410, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 71, "Resources Gathered": 197134687, "Alliance Helps": 321, "DKP": 12864832}, {"Username": "freshsoju", "Power": 78324903, "Highest Power": 92581946, "T5 Deaths": 545875, "T4 Deaths": 13323, "Power Loss": 5512042, "Total Kill Points": 77768157, "T5 Kills": 3522478, "T4 Kills": 729245, "T3 Kills": 3076, "T2 Kills": 5741, "T1 Kills": 11806, "Resources Gathered": 422997968, "Alliance Helps": 495, "DKP": 39937388}, {"Username": "Fori2121", "Power": 77312491, "Highest Power": 82304693, "T5 Deaths": 453468, "T4 Deaths": 231877, "Power Loss": 5462188, "Total Kill Points": 38334978, "T5 Kills": 1578567, "T4 Kills": 676108, "T3 Kills": 481, "T2 Kills": 154, "T1 Kills": 1632, "Resources Gathered": 159776927, "Alliance Helps": 224, "DKP": 24443472}, {"Username": "Chris xD", "Power": 76868769, "Highest Power": 87835888, "T5 Deaths": 662779, "T4 Deaths": 9663, "Power Loss": 6666442, "Total Kill Points": 55908788, "T5 Kills": 2073208, "T4 Kills": 1439942, "T3 Kills": 9474, "T2 Kills": 1052, "T1 Kills": 26040, "Resources Gathered": 168467850, "Alliance Helps": 375, "DKP": 33027200}, {"Username": "CrashTheCat", "Power": 75848860, "Highest Power": 86155104, "T5 Deaths": 1722501, "T4 Deaths": 91144, "Power Loss": 17589586, "Total Kill Points": 545343096, "T5 Kills": 24840944, "T4 Kills": 4838279, "T3 Kills": 2461, "T2 Kills": 51345, "T1 Kills": 144463, "Resources Gathered": 495901221, "Alliance Helps": 3939, "DKP": 246369836}, {"Username": "Marcul \u30c3", "Power": 74509533, "Highest Power": 82835258, "T5 Deaths": 668250, "T4 Deaths": 39401, "Power Loss": 6840104, "Total Kill Points": 206481733, "T5 Kills": 8935989, "T4 Kills": 2772326, "T3 Kills": 688, "T2 Kills": 12974, "T1 Kills": 49965, "Resources Gathered": 220072723, "Alliance Helps": 4929, "DKP": 93584424}, {"Username": "Niolas", "Power": 74347540, "Highest Power": 74350340, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 33394844, "Alliance Helps": 6, "DKP": 0}, {"Username": "SPECTRUM", "Power": 74315227, "Highest Power": 100004839, "T5 Deaths": 261598, "T4 Deaths": 1177, "Power Loss": 2620688, "Total Kill Points": 26866530, "T5 Kills": 1150222, "T4 Kills": 368964, "T3 Kills": 12, "T2 Kills": 68995, "T1 Kills": 172063, "Resources Gathered": 200265, "Alliance Helps": 1205, "DKP": 14872616}, {"Username": "\u4e97ABDALLAH\u4e97", "Power": 74153607, "Highest Power": 76805359, "T5 Deaths": 28435, "T4 Deaths": 187381, "Power Loss": 1033874, "Total Kill Points": 44983926, "T5 Kills": 1866257, "T4 Kills": 765870, "T3 Kills": 17, "T2 Kills": 9, "T1 Kills": 0, "Resources Gathered": 138342242, "Alliance Helps": 257, "DKP": 19947544}, {"Username": "Superior2IG", "Power": 73419257, "Highest Power": 75517036, "T5 Deaths": 149220, "T4 Deaths": 48782, "Power Loss": 1687328, "Total Kill Points": 41818390, "T5 Kills": 1907291, "T4 Kills": 367257, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 418585053, "Alliance Helps": 740, "DKP": 19505132}, {"Username": "GHOST  X", "Power": 73074328, "Highest Power": 76791340, "T5 Deaths": 103543, "T4 Deaths": 0, "Power Loss": 1035430, "Total Kill Points": 10971141, "T5 Kills": 443121, "T4 Kills": 184687, "T3 Kills": 651, "T2 Kills": 64332, "T1 Kills": 652915, "Resources Gathered": 13267713, "Alliance Helps": 64, "DKP": 5940404}, {"Username": "Wowern II", "Power": 72330355, "Highest Power": 75751875, "T5 Deaths": 239065, "T4 Deaths": 352370, "Power Loss": 3800130, "Total Kill Points": 40707755, "T5 Kills": 1823729, "T4 Kills": 422658, "T3 Kills": 337, "T2 Kills": 2440, "T1 Kills": 1839, "Resources Gathered": 740915144, "Alliance Helps": 498, "DKP": 22924464}, {"Username": "Palestinefree", "Power": 72300079, "Highest Power": 81442004, "T5 Deaths": 1240578, "T4 Deaths": 224057, "Power Loss": 13302008, "Total Kill Points": 210450546, "T5 Kills": 9190798, "T4 Kills": 2638131, "T3 Kills": 3240, "T2 Kills": 40832, "T1 Kills": 793260, "Resources Gathered": 923025352, "Alliance Helps": 2281, "DKP": 105720612}, {"Username": "OneThree8", "Power": 71148510, "Highest Power": 75756262, "T5 Deaths": 474189, "T4 Deaths": 115043, "Power Loss": 5202062, "Total Kill Points": 50287911, "T5 Kills": 2141932, "T4 Kills": 737303, "T3 Kills": 1637, "T2 Kills": 32572, "T1 Kills": 22743, "Resources Gathered": 217931181, "Alliance Helps": 876, "DKP": 28592036}, {"Username": "\u02e2\u207f Ahmad2", "Power": 71089261, "Highest Power": 83077271, "T5 Deaths": 579706, "T4 Deaths": 0, "Power Loss": 5797060, "Total Kill Points": 118137753, "T5 Kills": 5080992, "T4 Kills": 1642123, "T3 Kills": 2091, "T2 Kills": 38848, "T1 Kills": 53114, "Resources Gathered": 206588741, "Alliance Helps": 531, "DKP": 56491724}, {"Username": "x Elena d", "Power": 69073674, "Highest Power": 72420058, "T5 Deaths": 0, "T4 Deaths": 23518, "Power Loss": 94072, "Total Kill Points": 14304071, "T5 Kills": 643445, "T4 Kills": 143508, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 452, "Resources Gathered": 481686773, "Alliance Helps": 1591, "DKP": 5909736}, {"Username": "D\u1d2c\u0e5bBlacjer", "Power": 65560425, "Highest Power": 73413880, "T5 Deaths": 87283, "T4 Deaths": 0, "Power Loss": 872830, "Total Kill Points": 32655387, "T5 Kills": 1521818, "T4 Kills": 221814, "T3 Kills": 147, "T2 Kills": 112, "T1 Kills": 375, "Resources Gathered": 53251619, "Alliance Helps": 774, "DKP": 14458328}, {"Username": "XJIebyIIIeK", "Power": 63363132, "Highest Power": 63972296, "T5 Deaths": 33071, "T4 Deaths": 106051, "Power Loss": 754914, "Total Kill Points": 6155730, "T5 Kills": 284543, "T4 Kills": 46487, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 257395471, "Alliance Helps": 304, "DKP": 3839836}, {"Username": "mostafakf97", "Power": 61894534, "Highest Power": 61894534, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 1784726, "T5 Kills": 0, "T4 Kills": 141729, "T3 Kills": 91859, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 383166368, "Alliance Helps": 65, "DKP": 566916}, {"Username": "Wowern IV", "Power": 56480364, "Highest Power": 65232688, "T5 Deaths": 0, "T4 Deaths": 271834, "Power Loss": 1087336, "Total Kill Points": 6128046, "T5 Kills": 271247, "T4 Kills": 70296, "T3 Kills": 0, "T2 Kills": 73, "T1 Kills": 0, "Resources Gathered": 699945614, "Alliance Helps": 137, "DKP": 4625832}, {"Username": "bignini69", "Power": 55785241, "Highest Power": 88772962, "T5 Deaths": 2327657, "T4 Deaths": 16118, "Power Loss": 23341042, "Total Kill Points": 6699680, "T5 Kills": 306450, "T4 Kills": 56982, "T3 Kills": 0, "T2 Kills": 430, "T1 Kills": 0, "Resources Gathered": 18986453, "Alliance Helps": 40, "DKP": 40050984}, {"Username": "Wowern III", "Power": 55009224, "Highest Power": 62200835, "T5 Deaths": 0, "T4 Deaths": 433486, "Power Loss": 1733944, "Total Kill Points": 10489398, "T5 Kills": 425206, "T4 Kills": 198426, "T3 Kills": 127, "T2 Kills": 152, "T1 Kills": 1031, "Resources Gathered": 725186566, "Alliance Helps": 179, "DKP": 7663240}, {"Username": "ricou", "Power": 50040240, "Highest Power": 50040240, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 18580709, "Alliance Helps": 1, "DKP": 0}, {"Username": "M\u00cc\u30fbL\u00d6VE U", "Power": 49785775, "Highest Power": 50215785, "T5 Deaths": 0, "T4 Deaths": 271284, "Power Loss": 1085136, "Total Kill Points": 48881219, "T5 Kills": 1275449, "T4 Kills": 2304008, "T3 Kills": 65182, "T2 Kills": 19949, "T1 Kills": 157665, "Resources Gathered": 20156584, "Alliance Helps": 209, "DKP": 21589896}, {"Username": "Wowern V", "Power": 47651242, "Highest Power": 49258221, "T5 Deaths": 0, "T4 Deaths": 12388, "Power Loss": 49552, "Total Kill Points": 786620, "T5 Kills": 36351, "T4 Kills": 5960, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 671109114, "Alliance Helps": 126, "DKP": 413752}, {"Username": "Magikarp lvl 10", "Power": 47443221, "Highest Power": 52826639, "T5 Deaths": 0, "T4 Deaths": 1309309, "Power Loss": 5237236, "Total Kill Points": 60756343, "T5 Kills": 2391494, "T4 Kills": 1291703, "T3 Kills": 2194, "T2 Kills": 309, "T1 Kills": 196, "Resources Gathered": 600461684, "Alliance Helps": 136, "DKP": 34773236}, {"Username": "Magikarp lvl99", "Power": 46552308, "Highest Power": 50895537, "T5 Deaths": 0, "T4 Deaths": 1169925, "Power Loss": 4679700, "Total Kill Points": 49403323, "T5 Kills": 1946778, "T4 Kills": 1046183, "T3 Kills": 1249, "T2 Kills": 214, "T1 Kills": 2546, "Resources Gathered": 542270810, "Alliance Helps": 128, "DKP": 29118356}, {"Username": "Crash316", "Power": 46486817, "Highest Power": 50488866, "T5 Deaths": 0, "T4 Deaths": 794463, "Power Loss": 3177852, "Total Kill Points": 15604062, "T5 Kills": 631355, "T4 Kills": 297300, "T3 Kills": 811, "T2 Kills": 350, "T1 Kills": 92, "Resources Gathered": 226140880, "Alliance Helps": 541, "DKP": 12595744}, {"Username": "dune nic", "Power": 45058767, "Highest Power": 47759861, "T5 Deaths": 0, "T4 Deaths": 1052224, "Power Loss": 4208896, "Total Kill Points": 45972687, "T5 Kills": 1790201, "T4 Kills": 934271, "T3 Kills": 1065, "T2 Kills": 410717, "T1 Kills": 1314, "Resources Gathered": 862467620, "Alliance Helps": 2650, "DKP": 26476484}, {"Username": "Wowern VI", "Power": 43589136, "Highest Power": 43589136, "T5 Deaths": 0, "T4 Deaths": 12639, "Power Loss": 50556, "Total Kill Points": 667010, "T5 Kills": 31364, "T4 Kills": 3973, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 677729281, "Alliance Helps": 112, "DKP": 367916}, {"Username": "WLM Farm", "Power": 43505927, "Highest Power": 55588849, "T5 Deaths": 268286, "T4 Deaths": 1366447, "Power Loss": 8148648, "Total Kill Points": 4173900, "T5 Kills": 190989, "T4 Kills": 35412, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 279452335, "Alliance Helps": 139, "DKP": 16893712}, {"Username": "Superior3IG", "Power": 40005081, "Highest Power": 40865058, "T5 Deaths": 0, "T4 Deaths": 226126, "Power Loss": 904504, "Total Kill Points": 3248240, "T5 Kills": 142057, "T4 Kills": 40710, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 363598385, "Alliance Helps": 346, "DKP": 3108304}, {"Username": "\u9ed1\u6c57", "Power": 38655578, "Highest Power": 38655578, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 0, "Alliance Helps": 24, "DKP": 0}, {"Username": "ROLENTO", "Power": 36078542, "Highest Power": 42880200, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 52688212, "Alliance Helps": 2, "DKP": 0}, {"Username": "\u54c8\u54c8\u6d77", "Power": 35240867, "Highest Power": 35240867, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 0, "Alliance Helps": 0, "DKP": 0}, {"Username": "naseem farm 2", "Power": 34527200, "Highest Power": 34527200, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 84179056, "Alliance Helps": 7, "DKP": 0}, {"Username": "Zain2018", "Power": 33738391, "Highest Power": 33738391, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 56274161, "Alliance Helps": 45, "DKP": 0}, {"Username": "CIeopatraVII", "Power": 33165839, "Highest Power": 33165839, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 381465000, "Alliance Helps": 5, "DKP": 0}, {"Username": "CrashTheThird", "Power": 32772934, "Highest Power": 33457911, "T5 Deaths": 0, "T4 Deaths": 217794, "Power Loss": 871176, "Total Kill Points": 7749068, "T5 Kills": 348749, "T4 Kills": 77232, "T3 Kills": 341, "T2 Kills": 200, "T1 Kills": 18, "Resources Gathered": 223541957, "Alliance Helps": 109, "DKP": 4841272}, {"Username": "kailoren 2", "Power": 31141896, "Highest Power": 31141896, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 608058653, "Alliance Helps": 3560, "DKP": 0}, {"Username": "SuperiorIG", "Power": 29319646, "Highest Power": 29322846, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 76412937, "Alliance Helps": 8, "DKP": 0}, {"Username": "Abosofian2563", "Power": 28649314, "Highest Power": 29241979, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 23016525, "Alliance Helps": 0, "DKP": 0}, {"Username": "naseem farm1", "Power": 28631652, "Highest Power": 42540992, "T5 Deaths": 0, "T4 Deaths": 2865116, "Power Loss": 11460464, "Total Kill Points": 7682630, "T5 Kills": 380261, "T4 Kills": 7741, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 7579097, "Alliance Helps": 4, "DKP": 25993980}, {"Username": "SGSurviver404", "Power": 28508370, "Highest Power": 28508370, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 68132912, "Alliance Helps": 18, "DKP": 0}, {"Username": "zizo99i2", "Power": 25539062, "Highest Power": 26117221, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 218448505, "Alliance Helps": 65, "DKP": 0}, {"Username": "LoOSeFaRm II", "Power": 25476891, "Highest Power": 26843203, "T5 Deaths": 0, "T4 Deaths": 344828, "Power Loss": 1379312, "Total Kill Points": 4668780, "T5 Kills": 185348, "T4 Kills": 96182, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 476033311, "Alliance Helps": 61, "DKP": 4626136}, {"Username": "LoOSeFaRm I", "Power": 24220477, "Highest Power": 26273377, "T5 Deaths": 0, "T4 Deaths": 160328, "Power Loss": 641312, "Total Kill Points": 221301, "T5 Kills": 6097, "T4 Kills": 9871, "T3 Kills": 0, "T2 Kills": 299, "T1 Kills": 265, "Resources Gathered": 472954703, "Alliance Helps": 48, "DKP": 1370884}, {"Username": "zizoA90", "Power": 24053207, "Highest Power": 24053207, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 198945303, "Alliance Helps": 64, "DKP": 0}, {"Username": "Marcull ll", "Power": 23655152, "Highest Power": 24741012, "T5 Deaths": 0, "T4 Deaths": 276157, "Power Loss": 1104628, "Total Kill Points": 4914203, "T5 Kills": 186601, "T4 Kills": 118215, "T3 Kills": 8, "T2 Kills": 0, "T1 Kills": 1, "Resources Gathered": 113674358, "Alliance Helps": 61, "DKP": 4174924}, {"Username": "m i n u s c o l", "Power": 22557353, "Highest Power": 22558909, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 5525625, "Alliance Helps": 0, "DKP": 0}, {"Username": "LoOSeFaRm III", "Power": 21278927, "Highest Power": 21686879, "T5 Deaths": 0, "T4 Deaths": 110488, "Power Loss": 441952, "Total Kill Points": 2181323, "T5 Kills": 91457, "T4 Kills": 35181, "T3 Kills": 93, "T2 Kills": 0, "T1 Kills": 3, "Resources Gathered": 480457610, "Alliance Helps": 49, "DKP": 1756284}, {"Username": "\u30b7\u30b2\u30eb Blue", "Power": 21027445, "Highest Power": 25538373, "T5 Deaths": 0, "T4 Deaths": 1039513, "Power Loss": 4158052, "Total Kill Points": 7190134, "T5 Kills": 314414, "T4 Kills": 90137, "T3 Kills": 121, "T2 Kills": 0, "T1 Kills": 2, "Resources Gathered": 442772533, "Alliance Helps": 79, "DKP": 11191964}, {"Username": "umit farm", "Power": 18078335, "Highest Power": 19708075, "T5 Deaths": 0, "T4 Deaths": 432910, "Power Loss": 1731640, "Total Kill Points": 273580, "T5 Kills": 13679, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 170876903, "Alliance Helps": 85, "DKP": 3572712}, {"Username": "Magikarp lvl98", "Power": 17237452, "Highest Power": 22010627, "T5 Deaths": 0, "T4 Deaths": 1076925, "Power Loss": 4307700, "Total Kill Points": 3628873, "T5 Kills": 153112, "T4 Kills": 56562, "T3 Kills": 227, "T2 Kills": 52, "T1 Kills": 9, "Resources Gathered": 409990502, "Alliance Helps": 71, "DKP": 10066544}, {"Username": "palestinefarm", "Power": 15726514, "Highest Power": 17182358, "T5 Deaths": 0, "T4 Deaths": 373342, "Power Loss": 1493368, "Total Kill Points": 492300, "T5 Kills": 20262, "T4 Kills": 8706, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 80933572, "Alliance Helps": 37, "DKP": 3183656}, {"Username": "SupIG", "Power": 15722342, "Highest Power": 15733351, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 63791818, "Alliance Helps": 7, "DKP": 0}, {"Username": "Hanh L\u00e2m", "Power": 15599685, "Highest Power": 15923731, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 4727203, "Alliance Helps": 13, "DKP": 0}, {"Username": "GHOST Xd", "Power": 14295216, "Highest Power": 14295216, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 0, "Alliance Helps": 0, "DKP": 0}, {"Username": "LUMINOUSx", "Power": 13268490, "Highest Power": 14873962, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 0, "Alliance Helps": 54, "DKP": 0}, {"Username": "ghost x farm1", "Power": 12759662, "Highest Power": 12759662, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 2175600, "Alliance Helps": 0, "DKP": 0}, {"Username": "Mostafakhaled11", "Power": 12044806, "Highest Power": 12044806, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 1001390, "T5 Kills": 0, "T4 Kills": 100139, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 240801010, "Alliance Helps": 40, "DKP": 400556}, {"Username": "Marcul III", "Power": 11879061, "Highest Power": 11879061, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 75332250, "Alliance Helps": 14, "DKP": 0}, {"Username": "Mokhaled11", "Power": 11847349, "Highest Power": 11847349, "T5 Deaths": 0, "T4 Deaths": 27863, "Power Loss": 111452, "Total Kill Points": 626773, "T5 Kills": 0, "T4 Kills": 56254, "T3 Kills": 14210, "T2 Kills": 3456, "T1 Kills": 2405, "Resources Gathered": 249459006, "Alliance Helps": 42, "DKP": 447920}, {"Username": "\u043b\u0443\u0447\u0438\u043a", "Power": 10367326, "Highest Power": 10367326, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 32784331, "Alliance Helps": 13, "DKP": 0}, {"Username": "Basem Farm", "Power": 10202350, "Highest Power": 10465121, "T5 Deaths": 0, "T4 Deaths": 0, "Power Loss": 0, "Total Kill Points": 0, "T5 Kills": 0, "T4 Kills": 0, "T3 Kills": 0, "T2 Kills": 0, "T1 Kills": 0, "Resources Gathered": 3717000, "Alliance Helps": 6, "DKP": 0}];
+
+const fmt = (n, dec=0) => {
+  if(n===0) return '0';
+  if(n>=1e9) return (n/1e9).toFixed(dec||1)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(dec||1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(dec||0)+'K';
+  return n.toLocaleString();
+};
+const fmtFull = n => n ? n.toLocaleString() : '0';
+
+// ─── KPI CARDS ───
+const totalPower = RAW.reduce((a,r)=>a+r.Power,0);
+const totalKP    = RAW.reduce((a,r)=>a+r['Total Kill Points'],0);
+const totalDeaths= RAW.reduce((a,r)=>a+r['T5 Deaths']+r['T4 Deaths'],0);
+const topRes     = [...RAW].sort((a,b)=>b['Resources Gathered']-a['Resources Gathered'])[0];
+const topHelp    = [...RAW].sort((a,b)=>b['Alliance Helps']-a['Alliance Helps'])[0];
+const maxDKP     = [...RAW].sort((a,b)=>b.DKP-a.DKP)[0];
+const totalMembers=RAW.length;
+const activeMembers=RAW.filter(r=>r['Total Kill Points']>0).length;
+
+document.getElementById('kpi-grid').innerHTML = `
+  <div class="kpi-card featured"><span class="kpi-icon">⚔️</span>
+    <div class="kpi-label">Total Alliance Power</div>
+    <div class="kpi-value">${fmt(totalPower,1)}</div>
+    <div class="kpi-sub">Sum of active power · ${totalMembers} members</div>
+  </div>
+  <div class="kpi-card"><span class="kpi-icon">💀</span>
+    <div class="kpi-label">Total Kill Points</div>
+    <div class="kpi-value">${fmt(totalKP,1)}</div>
+    <div class="kpi-sub">Accumulated kill points</div>
+  </div>
+  <div class="kpi-card"><span class="kpi-icon">🩸</span>
+    <div class="kpi-label">Own Losses (T4+T5)</div>
+    <div class="kpi-value">${fmt(totalDeaths,1)}</div>
+    <div class="kpi-sub">T5+T4 troops sacrificed in combat</div>
+  </div>
+  <div class="kpi-card"><span class="kpi-icon">⛏</span>
+    <div class="kpi-label">Top Gatherer</div>
+    <div class="kpi-value" style="font-size:18px">${topRes.Username}</div>
+    <div class="kpi-sub">${fmt(topRes['Resources Gathered'],1)} resources · <span class="kpi-highlight">Gathering #1</span></div>
+  </div>
+  <div class="kpi-card"><span class="kpi-icon">🤝</span>
+    <div class="kpi-label">Top Helper</div>
+    <div class="kpi-value" style="font-size:18px">${topHelp.Username}</div>
+    <div class="kpi-sub">${fmtFull(topHelp['Alliance Helps'])} helps · <span class="kpi-highlight">Activity #1</span></div>
+  </div>
+  <div class="kpi-card"><span class="kpi-icon">🏅</span>
+    <div class="kpi-label">DKP Champion</div>
+    <div class="kpi-value" style="font-size:18px">${maxDKP.Username}</div>
+    <div class="kpi-sub">${fmt(maxDKP.DKP,1)} DKP · <span class="kpi-highlight">Max. war contribution</span></div>
+  </div>
+  <div class="kpi-card"><span class="kpi-icon">🔥</span>
+    <div class="kpi-label">Active Fighters</div>
+    <div class="kpi-value">${activeMembers}<span style="font-size:16px;color:var(--text-dim)"> / ${totalMembers}</span></div>
+    <div class="kpi-sub">${((activeMembers/totalMembers)*100).toFixed(0)}% of the alliance participated in combat</div>
+  </div>
+  <div class="kpi-card"><span class="kpi-icon">📊</span>
+    <div class="kpi-label">Avg. Kill Points</div>
+    <div class="kpi-value">${fmt(totalKP/activeMembers,1)}</div>
+    <div class="kpi-sub">Per active fighter</div>
+  </div>
+`;
+
+// ─── CHART DEFAULTS ───
+Chart.defaults.color = '#7A7870';
+Chart.defaults.borderColor = '#2A2A36';
+Chart.defaults.font.family = 'Inter';
+const GOLD = '#D4A017'; const RED = '#C0392B'; const GOLD2='#F0C040'; const RED2='#E74C3C';
+const makeGrad=(ctx,c1,c2)=>{const g=ctx.createLinearGradient(0,0,0,400);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;};
+
+const barOpts = (axis='x') => ({
+  responsive:true, maintainAspectRatio:false,
+  indexAxis: axis,
+  plugins:{ legend:{display:false}, tooltip:{
+    backgroundColor:'#18181F', borderColor:'#3A2E10', borderWidth:1,
+    titleColor:'#F0C040', bodyColor:'#E8E4D8', padding:10,
+    callbacks:{ label: ctx => ' '+fmt(ctx.raw,1) }
+  }},
+  scales:{
+    x:{ grid:{color:'#1E1E28'}, ticks:{color:'#7A7870',font:{size:10}} },
+    y:{ grid:{color:'#1E1E28'}, ticks:{color:'#C8B88A',font:{size:11}} }
+  }
+});
+
+// ── Top 10 Kill Points ──
+const top10KP = [...RAW].sort((a,b)=>b['Total Kill Points']-a['Total Kill Points']).slice(0,10);
+const ctxKP = document.getElementById('chartKP').getContext('2d');
+const gradKP = makeGrad(ctxKP,'rgba(192,57,43,0.9)','rgba(139,0,0,0.3)');
+new Chart(ctxKP,{
+  type:'bar',
+  data:{
+    labels: top10KP.map(r=>r.Username),
+    datasets:[{ data: top10KP.map(r=>r['Total Kill Points']), backgroundColor: gradKP, borderColor:RED2, borderWidth:1, borderRadius:4 }]
+  },
+  options: {
+    ...barOpts('y'),
+    scales:{
+      x:{ grid:{color:'#1E1E28'}, ticks:{color:'#7A7870',font:{size:10}, callback:v=>fmt(v)} },
+      y:{ grid:{display:false}, ticks:{color:'#F0C040',font:{size:11,weight:'600'}} }
+    }
+  }
+});
+
+// ── Scatter: Power vs KP ──
+const scatterData = RAW.filter(r=>r['Total Kill Points']>0);
+const medPower = scatterData.map(r=>r.Power).sort((a,b)=>a-b)[Math.floor(scatterData.length/2)];
+const medKP    = scatterData.map(r=>r['Total Kill Points']).sort((a,b)=>a-b)[Math.floor(scatterData.length/2)];
+
+const q = r => {
+  const hp = r.Power >= medPower, hk = r['Total Kill Points'] >= medKP;
+  if(hp && hk)  return 'warrior';   // gold - strong & efficient
+  if(!hp && hk) return 'hero';      // green - low power, high kills
+  if(hp && !hk) return 'dead';      // red - dead weight
+  return 'idle';                     // gray
+};
+const colorMap = { warrior:'rgba(212,160,23,0.85)', hero:'rgba(46,204,113,0.85)', dead:'rgba(192,57,43,0.85)', idle:'rgba(80,80,100,0.7)' };
+const labelMap = { warrior:'⚔ Efficient Warrior', hero:'🔥 Hidden Hero', dead:'💤 Dead Weight', idle:'😴 Inactive' };
+
+const ctxSc = document.getElementById('chartScatter').getContext('2d');
+const groups = ['warrior','hero','dead','idle'];
+new Chart(ctxSc,{
+  type:'scatter',
+  data:{
+    datasets: groups.map(g=>({
+      label: labelMap[g],
+      data: scatterData.filter(r=>q(r)===g).map(r=>({x:r.Power/1e6, y:r['Total Kill Points']/1e6, name:r.Username})),
+      backgroundColor: colorMap[g],
+      pointRadius:6, pointHoverRadius:9
+    }))
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ display:true, position:'top', labels:{color:'#C8B88A',font:{size:11},boxWidth:12,padding:16} },
+      tooltip:{
+        backgroundColor:'#18181F', borderColor:'#3A2E10', borderWidth:1,
+        titleColor:'#F0C040', bodyColor:'#E8E4D8', padding:10,
+        callbacks:{
+          title: items => items[0].raw.name,
+          label: item => [`Power: ${fmt(item.raw.x*1e6)}`, `Kill Points: ${fmt(item.raw.y*1e6)}`]
+        }
+      },
+      annotation: {}
+    },
+    scales:{
+      x:{ title:{display:true,text:'Power (M)',color:'#7A7870',font:{size:11}}, grid:{color:'#1E1E28'}, ticks:{color:'#7A7870',callback:v=>fmt(v*1e6)} },
+      y:{ title:{display:true,text:'Kill Points (M)',color:'#7A7870',font:{size:11}}, grid:{color:'#1E1E28'}, ticks:{color:'#7A7870',callback:v=>fmt(v*1e6)} }
+    }
+  }
+});
+
+document.getElementById('scatter-legend').innerHTML = groups.map(g=>
+  `<div class="leg-item"><div class="leg-dot" style="background:${colorMap[g]}"></div>${labelMap[g]}: ${scatterData.filter(r=>q(r)===g).length} players</div>`
+).join('');
+
+// ── T5 vs T4 Kills ──
+const top15Combat = [...RAW].filter(r=>r['T5 Kills']+r['T4 Kills']>0).sort((a,b)=>(b['T5 Kills']+b['T4 Kills'])-(a['T5 Kills']+a['T4 Kills'])).slice(0,12);
+const ctxT5T4 = document.getElementById('chartT5T4').getContext('2d');
+new Chart(ctxT5T4,{
+  type:'bar',
+  data:{
+    labels: top15Combat.map(r=>r.Username),
+    datasets:[
+      { label:'T5 Kills', data: top15Combat.map(r=>r['T5 Kills']), backgroundColor:'rgba(212,160,23,0.85)', borderRadius:3, borderSkipped:false },
+      { label:'T4 Kills', data: top15Combat.map(r=>r['T4 Kills']), backgroundColor:'rgba(192,57,43,0.75)', borderRadius:3, borderSkipped:false }
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ display:true, labels:{color:'#C8B88A',boxWidth:12} },
+      tooltip:{ backgroundColor:'#18181F',borderColor:'#3A2E10',borderWidth:1,titleColor:'#F0C040',bodyColor:'#E8E4D8',padding:10,callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.raw)}}
+    },
+    scales:{
+      x:{ stacked:false, grid:{display:false}, ticks:{color:'#F0C040',font:{size:10,weight:'600'}} },
+      y:{ stacked:false, grid:{color:'#1E1E28'}, ticks:{color:'#7A7870',callback:v=>fmt(v)} }
+    }
+  }
+});
+
+// ── T5 Deaths ──
+const top10T5D = [...RAW].sort((a,b)=>b['T5 Deaths']-a['T5 Deaths']).slice(0,10).filter(r=>r['T5 Deaths']>0);
+const ctxT5D = document.getElementById('chartT5Deaths').getContext('2d');
+const gradT5D = ctxT5D.createLinearGradient(300,0,0,0);
+gradT5D.addColorStop(0,'rgba(139,0,0,0.9)'); gradT5D.addColorStop(1,'rgba(192,57,43,0.3)');
+new Chart(ctxT5D,{type:'bar',data:{labels:top10T5D.map(r=>r.Username),datasets:[{data:top10T5D.map(r=>r['T5 Deaths']),backgroundColor:gradT5D,borderRadius:3}]},
+  options:{...barOpts('y'),scales:{x:{grid:{color:'#1E1E28'},ticks:{color:'#7A7870',font:{size:10},callback:v=>fmt(v)}},y:{grid:{display:false},ticks:{color:'#E74C3C',font:{size:10}}}}}});
+
+// ── Power Loss ──
+const top10PL = [...RAW].sort((a,b)=>b['Power Loss']-a['Power Loss']).slice(0,10).filter(r=>r['Power Loss']>0);
+const ctxPL = document.getElementById('chartPowerLoss').getContext('2d');
+const gradPL = ctxPL.createLinearGradient(300,0,0,0);
+gradPL.addColorStop(0,'rgba(212,160,23,0.8)'); gradPL.addColorStop(1,'rgba(122,92,10,0.3)');
+new Chart(ctxPL,{type:'bar',data:{labels:top10PL.map(r=>r.Username),datasets:[{data:top10PL.map(r=>r['Power Loss']),backgroundColor:gradPL,borderRadius:3}]},
+  options:{...barOpts('y'),scales:{x:{grid:{color:'#1E1E28'},ticks:{color:'#7A7870',font:{size:10},callback:v=>fmt(v)}},y:{grid:{display:false},ticks:{color:'#D4A017',font:{size:10}}}}}});
+
+// ── Kill Stack (top 15) ──
+const top15KP = [...RAW].sort((a,b)=>b['Total Kill Points']-a['Total Kill Points']).slice(0,15);
+const ctxKS = document.getElementById('chartKillStack').getContext('2d');
+new Chart(ctxKS,{type:'bar',
+  data:{labels:top15KP.map(r=>r.Username),datasets:[
+    {label:'T5 Kills',data:top15KP.map(r=>r['T5 Kills']),backgroundColor:'rgba(212,160,23,0.9)',borderRadius:0},
+    {label:'T4 Kills',data:top15KP.map(r=>r['T4 Kills']),backgroundColor:'rgba(192,57,43,0.85)'},
+    {label:'T3 Kills',data:top15KP.map(r=>r['T3 Kills']),backgroundColor:'rgba(100,100,150,0.75)'},
+    {label:'T2+T1',data:top15KP.map(r=>r['T2 Kills']+r['T1 Kills']),backgroundColor:'rgba(50,50,70,0.7)'},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#C8B88A',boxWidth:10,font:{size:10}}},tooltip:{backgroundColor:'#18181F',borderColor:'#3A2E10',borderWidth:1,titleColor:'#F0C040',bodyColor:'#E8E4D8',callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.raw)}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#D4A017',font:{size:9,weight:'600'}}},y:{stacked:true,grid:{color:'#1E1E28'},ticks:{color:'#7A7870',callback:v=>fmt(v)}}}}
+});
+
+// ── All KP ──
+const allSorted = [...RAW].filter(r=>r['Total Kill Points']>0).sort((a,b)=>b['Total Kill Points']-a['Total Kill Points']);
+const ctxKPA = document.getElementById('chartKPAll').getContext('2d');
+const colorsKPA = allSorted.map((_,i)=>`hsla(${25+i*2},${80-i}%,${45+i*0.3}%,0.85)`);
+new Chart(ctxKPA,{type:'bar',data:{labels:allSorted.map(r=>r.Username),datasets:[{data:allSorted.map(r=>r['Total Kill Points']),backgroundColor:colorsKPA,borderRadius:2}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{backgroundColor:'#18181F',borderColor:'#3A2E10',borderWidth:1,titleColor:'#F0C040',bodyColor:'#E8E4D8',callbacks:{label:ctx=>' '+fmt(ctx.raw)}}},
+    scales:{x:{grid:{color:'#1E1E28'},ticks:{color:'#7A7870',font:{size:9},callback:v=>fmt(v)}},y:{grid:{display:false},ticks:{color:'#C8B88A',font:{size:9}}}}}
+});
+
+// ── Alliance Helps ──
+const top10H = [...RAW].sort((a,b)=>b['Alliance Helps']-a['Alliance Helps']).slice(0,10);
+const ctxH = document.getElementById('chartHelps').getContext('2d');
+const gradH = ctxH.createLinearGradient(400,0,0,0);
+gradH.addColorStop(0,'rgba(46,204,113,0.8)'); gradH.addColorStop(1,'rgba(27,120,66,0.3)');
+new Chart(ctxH,{type:'bar',data:{labels:top10H.map(r=>r.Username),datasets:[{data:top10H.map(r=>r['Alliance Helps']),backgroundColor:gradH,borderRadius:4}]},
+  options:{...barOpts('y'),scales:{x:{grid:{color:'#1E1E28'},ticks:{color:'#7A7870',font:{size:10},callback:v=>fmt(v)}},y:{grid:{display:false},ticks:{color:'rgba(46,204,113,0.9)',font:{size:11,weight:'600'}}}}}});
+
+// ── Resources ──
+const top10R = [...RAW].sort((a,b)=>b['Resources Gathered']-a['Resources Gathered']).slice(0,10);
+const ctxR = document.getElementById('chartResources').getContext('2d');
+const gradR = ctxR.createLinearGradient(400,0,0,0);
+gradR.addColorStop(0,'rgba(52,152,219,0.8)'); gradR.addColorStop(1,'rgba(41,128,185,0.3)');
+new Chart(ctxR,{type:'bar',data:{labels:top10R.map(r=>r.Username),datasets:[{data:top10R.map(r=>r['Resources Gathered']),backgroundColor:gradR,borderRadius:4}]},
+  options:{...barOpts('y'),scales:{x:{grid:{color:'#1E1E28'},ticks:{color:'#7A7870',font:{size:10},callback:v=>fmt(v)}},y:{grid:{display:false},ticks:{color:'rgba(52,152,219,0.9)',font:{size:11,weight:'600'}}}}}});
+
+// ── Power Delta ──
+const top15PD = [...RAW].sort((a,b)=>b['Highest Power']-a['Highest Power']).slice(0,15);
+const ctxPD = document.getElementById('chartPowerDelta').getContext('2d');
+new Chart(ctxPD,{type:'bar',
+  data:{labels:top15PD.map(r=>r.Username),datasets:[
+    {label:'Current Power',data:top15PD.map(r=>r.Power),backgroundColor:'rgba(212,160,23,0.7)',borderRadius:0},
+    {label:'Power Lost',data:top15PD.map(r=>r['Power Loss']),backgroundColor:'rgba(192,57,43,0.85)',borderRadius:0},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#C8B88A',boxWidth:12}},tooltip:{backgroundColor:'#18181F',borderColor:'#3A2E10',borderWidth:1,titleColor:'#F0C040',bodyColor:'#E8E4D8',callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.raw)}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#D4A017',font:{size:10}}},y:{stacked:true,grid:{color:'#1E1E28'},ticks:{color:'#7A7870',callback:v=>fmt(v)}}}}
+});
+
+// ─── LEADERBOARD ───
+let sortCol = 'DKP';
+let sortDir = -1;
+const maxDKPval = Math.max(...RAW.map(r=>r.DKP));
+const getTier = dkp => {
+  if(dkp >= 100e6) return 'S';
+  if(dkp >= 30e6)  return 'A';
+  if(dkp >= 5e6)   return 'B';
+  return 'C';
+};
+
+let tableData = [...RAW].map((r,i)=>({...r,_rank:i+1}));
+
+function renderTable(data){
+  const body = document.getElementById('tableBody');
+  body.innerHTML = data.map((r,i)=>{
+    const tier = getTier(r.DKP);
+    const barW = Math.round((r.DKP/maxDKPval)*120);
+    return `<tr>
+      <td class="rank-cell ${i<3?'top3':''}">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</td>
+      <td class="username-cell" title="${r.Username}">${r.Username}</td>
+      <td class="num-cell">
+        <div class="dkp-bar-wrap">
+          <div class="dkp-bar" style="width:${barW}px"></div>
+          <span class="dkp-cell">${fmt(r.DKP)}</span>
+        </div>
+      </td>
+      <td class="num-cell">${fmt(r['Total Kill Points'])}</td>
+      <td class="num-cell">${fmt(r.Power)}</td>
+      <td class="num-cell">${fmt(r['T5 Deaths'])}</td>
+      <td class="num-cell">${fmt(r['T4 Deaths'])}</td>
+      <td class="num-cell">${fmt(r['T5 Kills'])}</td>
+      <td class="num-cell">${fmt(r['T4 Kills'])}</td>
+      <td class="num-cell">${fmt(r['Resources Gathered'])}</td>
+      <td class="num-cell">${fmtFull(r['Alliance Helps'])}</td>
+      <td><span class="tier tier-${tier.toLowerCase()}">${tier}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('tableCount').textContent = `Showing ${data.length} of ${RAW.length} players`;
+}
+
+function filterTable(){
+  const q  = document.getElementById('searchInput').value.toLowerCase();
+  const t  = document.getElementById('tierFilter').value;
+  let data = [...RAW].sort((a,b)=>(b[sortCol]-a[sortCol])*sortDir);
+  if(q) data = data.filter(r=>r.Username.toLowerCase().includes(q));
+  if(t) data = data.filter(r=>getTier(r.DKP)===t);
+  renderTable(data);
+}
+
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1;
+  else { sortCol=col; sortDir=-1; }
+  document.getElementById('colSort').value = col in {'DKP':1,'Total Kill Points':1,'Power':1,'T5 Deaths':1,'T5 Kills':1,'Resources Gathered':1,'Alliance Helps':1} ? col : 'DKP';
+  filterTable();
+}
+
+function applySort(){
+  sortCol = document.getElementById('colSort').value;
+  sortDir = -1;
+  filterTable();
+}
+
+// Initial render
+filterTable();
+
+// ─── TAB NAVIGATION ───
+function showTab(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
